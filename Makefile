@@ -1,9 +1,9 @@
 # Fake kernel Makefile for prebuilts.
 
 DEFCONFIG := arch/arm64/configs/vendor/chime_defconfig
-KERNELRELEASE := $(shell python get_kernel_version.py prebuilts/Image.gz)
+KERNELRELEASE := $(shell python3 get_kernel_version.py prebuilts/Image.gz)
 
-define copy-out-files
+define output-files
 	@mkdir -p $(O)/
 	@cp -f $(DEFCONFIG) $(O)/.config
 	@mkdir -p $(O)/include/config/
@@ -11,38 +11,16 @@ define copy-out-files
 	@mkdir -p $(O)/arch/arm64/boot
 	@cp -a prebuilts/* $(O)/arch/arm64/boot/
 	@touch $(O)/arch/arm64/boot/dts/vendor/qcom/modules.order
+	@mkdir -p $(O)/usr
+	@cp -a kernel_headers/* $(O)/usr/
 	@find $(O)/ -type f -exec touch {} +
 endef
 
-.PHONY: all
-all: Image.gz dtbs vendor/chime_defconfig headers_install
+# Output all prebuilt files regardless of make target.
+# With the right files, this is enough to fake a full kernel source build.
 
-.PHONY: vendor/chime_defconfig
-vendor/chime_defconfig:
-	@mkdir -p $(O)/
-	@cp -f $(DEFCONFIG) $(O)/.config
-	@echo "[PREBUILT KERNEL chime_defconfig] $(O)"
+.DEFAULT:
+	$(output-files)
+	@echo "[PREBUILT KERNEL] $(O)"
 
-.PHONY: Image.gz
-Image.gz:
-	$(copy-out-files)
-	@echo "[PREBUILT KERNEL Image.gz] $(O)"
-
-.PHONY: dtbs
-dtbs:
-	$(copy-out-files)
-	@echo "[PREBUILT KERNEL dtbs] $(O)"
-
-.PHONY: headers_install
-headers_install:
-	@mkdir -p $(O)/usr
-	@cp -a $(shell pwd)/kernel_headers/* $(O)/usr/
-	@find $(O)/ -type f -exec touch {} +
-	@echo "[PREBUILT KERNEL headers_install] $(O)/usr/"
-
-modules:
-	@true
-
-modules_install:
-	@true
-
+all: .DEFAULT
